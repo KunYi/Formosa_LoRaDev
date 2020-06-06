@@ -70,7 +70,7 @@ HYDRA SENSOR
 ```
 
 
-#### set update cycle, minimum 15 second(uint32_t)
+#### set update cycle, minimum: 15 second, maximum 60sec*60(min)*24=86400
 ```
 {
     "confirmed":true,

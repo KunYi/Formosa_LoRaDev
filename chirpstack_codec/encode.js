@@ -35,6 +35,7 @@ function SetHydraSensorPeriod(obj)
     if (typeof obj.Second == "number") {
         d = obj.Second;
         if (d < 15) d = 15;
+        if (d > 86400) d = 86400; // 1 day
         bytes[0] = 0xFE;
         bytes[1] = 0x01;
         bytes[2] = 0x01; // set
