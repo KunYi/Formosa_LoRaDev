@@ -13,7 +13,7 @@ run "mosquitto_sub -t "application/2/device/#" -d"
 4. send MQTT message for test
 run "mosquitto_pub -t "application/2/device/007032fffe010000/tx" -d -f per.json"
 
-   per.json context like the below
+   per.json context like the below, show how to change update peridiod
    ---
    '''
    {
