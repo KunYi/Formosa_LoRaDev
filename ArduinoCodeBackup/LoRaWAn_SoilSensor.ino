@@ -78,6 +78,20 @@ typedef enum {
   TYPE_SET = 1
 } HYDRA_CMD_TYPE;
 
+typedef enum {
+  REG_SOILTYPE = 0x0020,
+  REG_ECTEMPCOEF = 0x0022,
+  REG_SALCOEF = 0x0023,
+  REG_TDSCOEF = 0x0024
+} HYDRA_REGS;
+
+ModbusMaster node;
+#if 1
+SoftwareSerial swser( GPIO5/* rx */, GPIO6/* tx */);
+#else
+//HardwareSerial hwser(UART_NUM_1);
+#endif
+
 /* Prepares the payload of the frame */
 static void prepareTxFrame( uint8_t port , uint16_t temp, uint16_t vwc, uint16_t EC, uint16_t sal)
 {
@@ -99,10 +113,6 @@ static void prepareTxFrame( uint8_t port , uint16_t temp, uint16_t vwc, uint16_t
     appData[7] = (uint8_t)(sal & 0xFF);
 }
 
-void downLinkDataHandle(McpsIndication_t *mcpsIndication) {
-  DownLinkDataHandle(mcpsIndication);
-}
-
 static void reportPeriod() {
 
 }
@@ -122,6 +132,63 @@ static void reportSoilType() {
 }
 
 static void setSoilType(uint8_t size, uint8_t *d) {
+  if (size >= 2) {
+    uint16_t v = d[0] << 0 | d[1];
+    if (v <= 3) {
+      node.writeSingleRegister(REG_SOILTYPE, v);
+    }
+  }
+}
+
+static void reportECTempCoef() {
+
+}
+
+static void setECTempCoef(uint8_t size, uint8_t *d) {
+  if (size >= 2) {
+    uint16_t v = d[0] << 0 | d[1];
+    if (v <= 100)
+      node.writeSingleRegister(REG_ECTEMPCOEF, v);
+  }
+}
+
+static void reportSaltCoef() {
+
+}
+
+static void setSaltCoef(uint8_t size, uint8_t *d) {
+  if (size >= 2) {
+    uint16_t v = d[0] << 0 | d[1];
+    if (v <= 100)
+      node.writeSingleRegister(REG_SALCOEF, v);
+  }
+}
+
+static void reportTDSCoef() {
+
+}
+
+static void setTDSCoef(uint8_t size, uint8_t *d) {
+  if (size >= 2) {
+    uint16_t v = d[0] << 0 | d[1];
+    if (v <= 100)
+      node.writeSingleRegister(REG_TDSCOEF, v);
+  }
+}
+
+static void setNetTime(uint8_t size, uint8_t *d) {
+    if (size >= 8) {
+      uint64_t time;
+      time = d[0] << 56 | d[1] << 48 | d[2] << 40 | d[3] << 32 |
+            d[4] << 24 | d[5] << 16 | d[6] << 8 | d[7];
+      setTime((time_t)time);
+    }
+}
+
+static void resetDevice(void) {
+    typedef void (*funcptr)();
+    (* (funcptr) (void *) 0)(); // software reset
+    (* (funcptr) (void *) 0)();
 }
 
 static void procRxData(const uint8_t port, uint8_t size, uint8_t *data) 
@@ -145,20 +212,38 @@ static void procRxData(const uint8_t port, uint8_t size, uint8_t *data)
     }
     break;
   case CMD_ECTEMPCOEF:
+    if (data[3] == TYPE_GET) {
+      reportECTempCoef();
+    } else if (data[3] == TYPE_SET) {
+      setECTempCoef(size - 3, &data[4]);
+    }
     break;
   case CMD_SALCOEF:
+    if (data[3] == TYPE_GET) {
+      reportSaltCoef();
+    } else if (data[3] == TYPE_SET) {
+      setSaltCoef(size - 3, &data[4]);
+    }
     break;
   case CMD_TDSCOEF:
+    if (data[3] == TYPE_GET) {
+      reportTDSCoef();
+    } else if (data[3] == TYPE_SET) {
+      setTDSCoef(size - 3, &data[4]);
+    }
     break;
   case CMD_SYNCTIME:
+    setNetTime(size - 2, &data[4]);
     break;
   case CMD_RESET:
+    if (data[3] == 0x55 && data[4] == 0xAA)
+      resetDevice();
     break;
   }
 }
 
 //downlink data handle function example
-void DownLinkDataHandle(McpsIndication_t *mcpsIndication)
+void downLinkDataHandle(McpsIndication_t *mcpsIndication)
 {
   Serial.printf("+REV DATA:%s,RXSIZE %d,PORT %d\r\n",mcpsIndication->RxSlot?"RXWIN2":"RXWIN1",mcpsIndication->BufferSize,mcpsIndication->Port);
   Serial.print("+REV DATA:");
@@ -168,25 +253,8 @@ void DownLinkDataHandle(McpsIndication_t *mcpsIndication)
   }
   procRxData(mcpsIndication->Port, mcpsIndication->BufferSize, mcpsIndication->Buffer);
 
-
-  #if 0
-        if (type == 0xFEEA) {
-            uint64_t time;
-            uint8_t *pB = (mcpsIndication->Buffer + 2);
-            time = pB[0] << 56 | pB[1] << 48 | pB[2] << 40 | pB[3] << 32 |
-                    pB[4] << 24 | pB[5] << 16 | pB[6] << 8 | pB[7];
-            setTime((time_t)time);
-        }
-  #endif
   Serial.println();
 }
-
-ModbusMaster node;
-#if 1
-SoftwareSerial swser( GPIO5/* rx */, GPIO6/* tx */);
-#else
-//HardwareSerial hwser(UART_NUM_1);
-#endif
 
 void setup() {
   
