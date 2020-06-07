@@ -108,6 +108,38 @@ SoftwareSerial swser( GPIO5/* rx */, GPIO6/* tx */);
 //HardwareSerial hwser(UART_NUM_1);
 #endif
 
+static void prepareSoilTypeFrame(void) {
+  uint8_t i = 0;
+  uint8_t resultMain;
+  resultMain = node.readHoldingRegisters(REG_SOILTYPE, 1);
+  if (resultMain == node.ku8MBSuccess) {
+    uint16_t v = node.getResponseBuffer(0x00);
+    appPort = 3;
+    appData[i++] = (CMD_SOILTYPE >> 8) & 0xFF;
+    appData[i++] = CMD_SOILTYPE & 0xFF;
+    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
+    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
+    appDataSize = i;
+  }
+  gReportFlags.b.soilType = 0;
+}
+
+static void prepareECTempCoefFrame(void) {
+  uint8_t i = 0;
+  uint8_t resultMain;
+  resultMain = node.readHoldingRegisters(REG_ECTEMPCOEF, 1);
+  if (resultMain == node.ku8MBSuccess) {
+    uint16_t v = node.getResponseBuffer(0x00);
+    appPort = 3;
+    appData[i++] = (CMD_ECTEMPCOEF >> 8) & 0xFF;
+    appData[i++] = CMD_ECTEMPCOEF & 0xFF;
+    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
+    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
+    appDataSize = i;
+  }
+  gReportFlags.b.ECTempCoef = 0;
+}
+
 static void prepareSaltCoefFrame(void) {
   uint8_t i = 0;
   uint8_t resultMain;
@@ -117,8 +149,8 @@ static void prepareSaltCoefFrame(void) {
     appPort = 3;
     appData[i++] = (CMD_SALCOEF >> 8) & 0xFF;
     appData[i++] = CMD_SALCOEF & 0xFF;
-    appData[i++] = (uint8_t)(t >> 8) & 0xFF;
-    appData[i++] = (uint8_t)(t >> 0) & 0xFF;
+    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
+    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
     appDataSize = i;
   }
   gReportFlags.b.saltCoef = 0;
@@ -133,8 +165,8 @@ static void prepareTDSCoefFrame(void) {
     appPort = 3;
     appData[i++] = (CMD_TDSCOEF >> 8) & 0xFF;
     appData[i++] = CMD_TDSCOEF & 0xFF;
-    appData[i++] = (uint8_t)(t >> 8) & 0xFF;
-    appData[i++] = (uint8_t)(t >> 0) & 0xFF;
+    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
+    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
     appDataSize = i;
   }
   gReportFlags.b.TDSCoef = 0;
@@ -142,7 +174,6 @@ static void prepareTDSCoefFrame(void) {
 
 static void preparePeroidFrame(void)
 {
-  Serial.println("prepare report peroid data");
   uint32_t t = (appTxDutyCycle / 1000);
   uint8_t i = 0;
   appPort = 3;
@@ -216,23 +247,11 @@ static void prepareTxFrame(void)
 
   if (gReportFlags.V != 0) {
     if (gReportFlags.b.soilType) {
-      appPort = 2;
-      appData[0] = (CMD_SOILTYPE >> 8) & 0xFF;
-      appData[1] = CMD_SOILTYPE & 0xFF;
-      appData[2] = 0;
-      appData[3] = 0;
-      appDataSize = 4;
-      gReportFlags.b.soilType = 0;
+      prepareSoilTypeFrame();
       return;
     }
     if (gReportFlags.b.ECTempCoef) {
-      appPort = 2;
-      appData[0] = (CMD_ECTEMPCOEF >> 8) & 0xFF;
-      appData[1] = CMD_ECTEMPCOEF & 0xFF;
-      appData[2] = 0;
-      appData[3] = 0;
-      appDataSize = 4;
-      gReportFlags.b.ECTempCoef = 0;
+      prepareECTempCoefFrame();
       return;
     }
     if (gReportFlags.b.saltCoef) {
