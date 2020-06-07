@@ -174,7 +174,7 @@ function Encode(fPort, obj) {
                     return SetHydraSensorECTempCoef(obj);
                 }
             }
-            else if (obj.Obj == "SalCoef") {
+            else if (obj.Obj == "SaltCoef") {
                 if (obj.Control == "Get") {
                     return GetHydraSensorSalCoef();
                 }
