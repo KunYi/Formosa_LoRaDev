@@ -41,6 +41,22 @@ bool isTxConfirmed = LORAWAN_UPLINKMODE;
 
 /* Application port */
 uint8_t appPort = 2;
+
+struct SENSOR_REPORT_T {
+  uint16_t soilType: 1;
+  uint16_t ECTempCoef: 1;
+  uint16_t saltCoef: 1;
+  uint16_t TDSCoef: 1;
+  uint16_t period: 1;
+  uint16_t dateTime: 1;
+  uint16_t twice: 1;
+};
+
+typedef union {
+  struct SENSOR_REPORT_T b;
+  uint16_t               V;
+} SENSOR_REPORT;
+static SENSOR_REPORT gReportFlags = { .V = 0 };
 /*!
 * Number of trials to transmit the frame, if the LoRaMAC layer did not
 * receive an acknowledgment. The MAC performs a datarate adaptation,
@@ -92,8 +108,103 @@ SoftwareSerial swser( GPIO5/* rx */, GPIO6/* tx */);
 //HardwareSerial hwser(UART_NUM_1);
 #endif
 
+static void prepareSaltCoefFrame(void) {
+  uint8_t i = 0;
+  uint8_t resultMain;
+  resultMain = node.readHoldingRegisters(REG_SALCOEF, 1);
+  if (resultMain == node.ku8MBSuccess) {
+    uint16_t v = node.getResponseBuffer(0x00);
+    appPort = 3;
+    appData[i++] = (CMD_SALCOEF >> 8) & 0xFF;
+    appData[i++] = CMD_SALCOEF & 0xFF;
+    appData[i++] = (uint8_t)(t >> 8) & 0xFF;
+    appData[i++] = (uint8_t)(t >> 0) & 0xFF;
+    appDataSize = i;
+  }
+  gReportFlags.b.saltCoef = 0;
+}
+
+static void prepareTDSCoefFrame(void) {
+  uint8_t i = 0;
+  uint8_t resultMain;
+  resultMain = node.readHoldingRegisters(REG_TDSCOEF, 1);
+  if (resultMain == node.ku8MBSuccess) {
+    uint16_t v = node.getResponseBuffer(0x00);
+    appPort = 3;
+    appData[i++] = (CMD_TDSCOEF >> 8) & 0xFF;
+    appData[i++] = CMD_TDSCOEF & 0xFF;
+    appData[i++] = (uint8_t)(t >> 8) & 0xFF;
+    appData[i++] = (uint8_t)(t >> 0) & 0xFF;
+    appDataSize = i;
+  }
+  gReportFlags.b.TDSCoef = 0;
+}
+
+static void preparePeroidFrame(void)
+{
+  Serial.println("prepare report peroid data");
+  uint32_t t = (appTxDutyCycle / 1000);
+  uint8_t i = 0;
+  appPort = 3;
+  appData[i++] = (uint8_t)(CMD_PERIOD >> 8) & 0xFF;
+  appData[i++] = (uint8_t)(CMD_PERIOD >> 0) & 0xFF;
+  appData[i++] = (uint8_t)(t >> 24) & 0xFF;
+  appData[i++] = (uint8_t)(t >> 16) & 0xFF;
+  appData[i++] = (uint8_t)(t >>  8) & 0xFF;
+  appData[i++] = (uint8_t)(t >>  0) & 0xFF;
+  appDataSize = i;
+  #if 0
+  if (!gReportFlags.b.twice) {
+    gReportFlags.b.twice = 1;
+  } else {
+    gReportFlags.b.period = 0;
+    gReportFlags.b.twice = 0;
+  }
+  #endif
+  gReportFlags.b.period = 0;
+}
+
+static void prepareDataFrame(void)
+{
+  uint8_t i;
+  uint8_t resultMain;
+  uint16_t temperature = 0, vwc = 0, EC = 0, sal = 0;
+
+  resultMain = node.readHoldingRegisters(0x0000, 4);
+  if (resultMain == node.ku8MBSuccess) {
+    Serial.println("---------------");
+    temperature = node.getResponseBuffer(0x00);
+    vwc = node.getResponseBuffer(0x01);
+    EC = node.getResponseBuffer(0x02);
+    sal = node.getResponseBuffer(0x03);
+    Serial.print("temp:" + String(temperature));
+    Serial.print(", vwc:" + String(vwc));
+    Serial.print(", EC:" + String(EC));
+    Serial.println(", Sal:" + String(sal));
+  } else {
+    /* fake data for test */
+    temperature = 2534; // 25.34 C
+    //temperature = 0xFF05; // -2.51 C
+    vwc = 7803;         // 78.03%
+    EC = 18340;
+    sal = 14534;
+    Serial.println("Send simulation data");
+  }
+  i = 0;
+  appPort = 2;
+  appData[i++] = (uint8_t)(temperature >> 8);
+  appData[i++] = (uint8_t)(temperature & 0xFF);
+  appData[i++] = (uint8_t)(vwc >> 8);
+  appData[i++] = (uint8_t)(vwc & 0xFF);
+  appData[i++] = (uint8_t)(EC >> 8);
+  appData[i++] = (uint8_t)(EC & 0xFF);
+  appData[i++] = (uint8_t)(sal >> 8);
+  appData[i++] = (uint8_t)(sal & 0xFF);
+  appDataSize = i;
+}
+
 /* Prepares the payload of the frame */
-static void prepareTxFrame( uint8_t port , uint16_t temp, uint16_t vwc, uint16_t EC, uint16_t sal)
+static void prepareTxFrame(void)
 {
 	/*appData size is LORAWAN_APP_DATA_MAX_SIZE which is defined in "commissioning.h".
 	*appDataSize max value is LORAWAN_APP_DATA_MAX_SIZE.
@@ -102,19 +213,46 @@ static void prepareTxFrame( uint8_t port , uint16_t temp, uint16_t vwc, uint16_t
 	*for example, if use REGION_CN470, 
 	*the max value for different DR can be found in MaxPayloadOfDatarateCN470 refer to DataratesCN470 and BandwidthsCN470 in "RegionCN470.h".
 	*/
-    appDataSize = 8;
-    appData[0] = (uint8_t)(temp >> 8);
-    appData[1] = (uint8_t)(temp & 0xFF);
-    appData[2] = (uint8_t)(vwc >> 8);
-    appData[3] = (uint8_t)(vwc & 0xFF);
-    appData[4] = (uint8_t)(EC >> 8);
-    appData[5] = (uint8_t)(EC & 0xFF);
-    appData[6] = (uint8_t)(sal >> 8);
-    appData[7] = (uint8_t)(sal & 0xFF);
+
+  if (gReportFlags.V != 0) {
+    if (gReportFlags.b.soilType) {
+      appPort = 2;
+      appData[0] = (CMD_SOILTYPE >> 8) & 0xFF;
+      appData[1] = CMD_SOILTYPE & 0xFF;
+      appData[2] = 0;
+      appData[3] = 0;
+      appDataSize = 4;
+      gReportFlags.b.soilType = 0;
+      return;
+    }
+    if (gReportFlags.b.ECTempCoef) {
+      appPort = 2;
+      appData[0] = (CMD_ECTEMPCOEF >> 8) & 0xFF;
+      appData[1] = CMD_ECTEMPCOEF & 0xFF;
+      appData[2] = 0;
+      appData[3] = 0;
+      appDataSize = 4;
+      gReportFlags.b.ECTempCoef = 0;
+      return;
+    }
+    if (gReportFlags.b.saltCoef) {
+      prepareSaltCoefFrame();
+      return;
+    }
+    if (gReportFlags.b.TDSCoef) {
+      prepareTDSCoefFrame();
+      return;
+    }
+    if (gReportFlags.b.period) {
+      preparePeroidFrame();
+      return;
+    }
+  }
+  prepareDataFrame();
 }
 
 static void reportPeriod() {
-
+  gReportFlags.b.period = 1;
 }
 
 static void setPeroid(uint8_t size, uint8_t *d) {
@@ -125,10 +263,12 @@ static void setPeroid(uint8_t size, uint8_t *d) {
     if (t > 86400) t = 86400;
   }
   appTxDutyCycle = t * 1000;
+  gReportFlags.b.period = 1;
 }
 
 static void reportSoilType() {
-
+  Serial.println("set report SoilType");
+  gReportFlags.b.soilType = 1;
 }
 
 static void setSoilType(uint8_t size, uint8_t *d) {
@@ -136,43 +276,50 @@ static void setSoilType(uint8_t size, uint8_t *d) {
     uint16_t v = d[0] << 0 | d[1];
     if (v <= 3) {
       node.writeSingleRegister(REG_SOILTYPE, v);
+      gReportFlags.b.soilType = 1;
     }
   }
 }
 
 static void reportECTempCoef() {
-
+  gReportFlags.b.ECTempCoef = 1;
 }
 
 static void setECTempCoef(uint8_t size, uint8_t *d) {
   if (size >= 2) {
     uint16_t v = d[0] << 0 | d[1];
-    if (v <= 100)
+    if (v <= 100) {
       node.writeSingleRegister(REG_ECTEMPCOEF, v);
+      gReportFlags.b.ECTempCoef = 1;
+    }
   }
 }
 
 static void reportSaltCoef() {
-
+  gReportFlags.b.saltCoef = 1;
 }
 
 static void setSaltCoef(uint8_t size, uint8_t *d) {
   if (size >= 2) {
     uint16_t v = d[0] << 0 | d[1];
-    if (v <= 100)
+    if (v <= 100) {
       node.writeSingleRegister(REG_SALCOEF, v);
+      gReportFlags.b.saltCoef = 1;
+    }
   }
 }
 
 static void reportTDSCoef() {
-
+  gReportFlags.b.TDSCoef = 1;
 }
 
 static void setTDSCoef(uint8_t size, uint8_t *d) {
   if (size >= 2) {
     uint16_t v = d[0] << 0 | d[1];
-    if (v <= 100)
+    if (v <= 100) {
       node.writeSingleRegister(REG_TDSCOEF, v);
+      gReportFlags.b.TDSCoef = 1;
+    }
   }
 }
 
@@ -187,6 +334,8 @@ static void setNetTime(uint8_t size, uint8_t *d) {
 
 static void resetDevice(void) {
     typedef void (*funcptr)();
+    Serial.println("Reset Device now!\r\n");
+    delay(200);
     (* (funcptr) (void *) 0)(); // software reset
     (* (funcptr) (void *) 0)();
 }
@@ -251,9 +400,8 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
   {
     Serial.printf("%02X",mcpsIndication->Buffer[i]);
   }
-  procRxData(mcpsIndication->Port, mcpsIndication->BufferSize, mcpsIndication->Buffer);
-
   Serial.println();
+  procRxData(mcpsIndication->Port, mcpsIndication->BufferSize, mcpsIndication->Buffer);
 }
 
 void setup() {
@@ -299,31 +447,7 @@ void loop()
 		}
 		case DEVICE_STATE_SEND:
 		{
-      uint8_t resultMain;
-      uint16_t temperature = 0, vwc = 0, EC = 0, sal = 0;
-      
-      resultMain = node.readHoldingRegisters(0x0000, 4);
-      if (resultMain == node.ku8MBSuccess){
-         Serial.println("---------------");
-         appPort = 2;
-         temperature = node.getResponseBuffer(0x00);
-         vwc = node.getResponseBuffer(0x01);
-         EC = node.getResponseBuffer(0x02);
-         sal = node.getResponseBuffer(0x03);
-         Serial.print("temp:" + String(temperature));
-         Serial.print(", vwc:" + String(vwc));
-         Serial.print(", EC:" + String(EC));
-         Serial.println(", Sal:" + String(sal));         
-      } else {
-        appPort = 2;
-        /* fake data for test */
-        temperature = 2534; // 25.34 C 
-        //temperature = 0xFF05; // -2.51 C
-        vwc = 7803;         // 78.03%
-        EC = 18340;
-        sal = 14534;
-      }
-			prepareTxFrame( appPort , temperature, vwc, EC, sal);
+			prepareTxFrame();
 			LoRaWAN.send();
 			deviceState = DEVICE_STATE_CYCLE;
 			break;
