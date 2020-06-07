@@ -4,9 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	log "log"
+	"strings"
 
 	api "github.com/brocaar/chirpstack-api/go/as/external/api"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -106,34 +109,46 @@ func main() {
 	}
 
 	devClient := api.NewDeviceServiceClient(conn)
-	dev := api.Device{
-		Name:            "RM1-SS7",
-		DevEui:          "007032FFFE010006",
-		DeviceProfileId: "9e89a1f2-fbbf-46fa-840d-73f238053bbd",
-		Description:     "Soil HydraSensor - Temperature/Volumetric Water Content/Electrical Conductivity/Salinty",
-		ApplicationId:   2, // Soil-HydraSensor
-		SkipFCntCheck:   true}
-	devReq := api.CreateDeviceRequest{Device: &dev}
-	_, err1 := devClient.Create(context.Background(), &devReq)
-	if err1 != nil {
-		log.Fatal("err create device", err)
-	}
+	for i := 0; i < 8; i++ {
 
-	devKey := api.DeviceKeys{
-		DevEui:    "007032FFFE010006",
-		NwkKey:    "a05b6d3d1c2446149e6e8949c94f231a",
-		AppKey:    "415164cd36354b168d67fa251573969b",
-		GenAppKey: "c733489f95c8a1353ec4000369bb522c",
-	}
+		appKey, _ := uuid.NewRandom()
+		genAppKey, _ := uuid.NewRandom()
+		nwkKey, _ := uuid.NewRandom()
+		strAppKey := strings.Replace(appKey.String(), "-", "", -1)
+		strGenAppKey := strings.Replace(genAppKey.String(), "-", "", -1)
+		strNwkKey := strings.Replace(nwkKey.String(), "-", "", -1)
+		strDevName := fmt.Sprintf("%s%02d", "RM3-SS", i+1)
+		strDevEUI := fmt.Sprintf("%s%04d", "70BED5FFFE01", i+17)
 
-	_, err2 := devClient.CreateKeys(context.Background(),
-		&api.CreateDeviceKeysRequest{
-			DeviceKeys: &devKey})
-	if err2 != nil {
-		if grpc.Code(err) == codes.AlreadyExists {
-			log.Printf("device-keys for device %s already exists", dev.DevEui)
+		dev := api.Device{
+			Name:            strDevName,
+			DevEui:          strDevEUI,
+			DeviceProfileId: "9e89a1f2-fbbf-46fa-840d-73f238053bbd",
+			Description:     "Soil HydraSensor - Temperature/Volumetric Water Content/Electrical Conductivity/Salinty",
+			ApplicationId:   2, // Formosa-Fram
+			SkipFCntCheck:   true}
+		devReq := api.CreateDeviceRequest{Device: &dev}
+		_, err1 := devClient.Create(context.Background(), &devReq)
+		if err1 != nil {
+			log.Fatal("err create device", err)
 		}
-		log.Fatalf("import error (device %s): %s", dev.DevEui, err)
+
+		devKey := api.DeviceKeys{
+			DevEui:    strDevEUI,
+			NwkKey:    strNwkKey,
+			AppKey:    strAppKey,
+			GenAppKey: strGenAppKey,
+		}
+		log.Println(fmt.Sprintf("%s, %s, %s, %s, %s", strDevName, strDevEUI, strNwkKey, strAppKey, strGenAppKey))
+		_, err2 := devClient.CreateKeys(context.Background(),
+			&api.CreateDeviceKeysRequest{
+				DeviceKeys: &devKey})
+		if err2 != nil {
+			if grpc.Code(err) == codes.AlreadyExists {
+				log.Printf("device-keys for device %s already exists", dev.DevEui)
+			}
+			log.Fatalf("import error (device %s): %s", dev.DevEui, err)
+		}
 	}
 
 }
