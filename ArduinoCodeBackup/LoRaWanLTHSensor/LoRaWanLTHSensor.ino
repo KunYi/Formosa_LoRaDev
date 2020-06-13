@@ -230,7 +230,6 @@ static void procRxData(const uint8_t port, uint8_t size, uint8_t *data)
 {
   if (port != 10 || size < 3 || data == NULL) return;  
   uint16_t cmd = data[0] << 8 | data[1];
-  Serial.println("procRxData");
   switch(cmd) {
   case CMD_PERIOD:
     Serial.println("CMD_PERIOD");
