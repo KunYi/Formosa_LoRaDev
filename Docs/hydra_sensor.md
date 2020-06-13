@@ -25,13 +25,13 @@ HYDRA SENSOR
 
 ### Data JSON Object, for example
 ---
-**MQTT Topic: 'application/2/device/007032fffe010000/rx'**
+**MQTT Topic: 'application/2/device/70bed5fffe010001/rx'**
 ```
 { 
     "applicationID":"2",
     "applicationName":"Formosa-Farm",
     "deviceName":"RM1-SS1",
-    "devEUI":"007032fffe010000",
+    "devEUI":"70bed5fffe010001",
     "txInfo": { 
                 "frequency": 905100000, 
                 "dr":3 
@@ -51,9 +51,9 @@ HYDRA SENSOR
 ```
 ### Get/Set Attribute in JSON Object
 ---
-**MQTT Topic: 'application/2/device/007032fffe010000/tx'**
+**MQTT Topic: 'application/2/device/70bed5fffe010001/tx'**
 
-007032fffe010000 : Device EUI(Extended Unique Indentifier), need change it to match your node
+70bed5fffe010001 : Device EUI(Extended Unique Indentifier), need change it to match your node
 
 ### Period
 ---
