@@ -8,8 +8,25 @@ function getTemp(tmp)
   return t.toFixed(2) * 0.01;
 }
 
+function getTemp1(tmp)
+{
+  var t = (tmp[0] << 8 | tmp[1]);
+  if (tmp[0] == 0xFF) {
+     t = t - 65536;
+  }
+  return t.toFixed(2) * 0.1;
+}
+
 function getVWC(tmp) {
   return (tmp[0] << 8 | tmp[1]).toFixed(2) * 0.01;
+}
+
+function getPH(tmp) {
+  return (tmp[0] << 8 | tmp[1]).toFixed(2) * 0.001;
+}
+
+function getHuminity(tmp) {
+  return (tmp[0] << 8 | tmp[1]).toFixed(2) * 0.1;
 }
 
 function getUint16(tmp) {
@@ -58,6 +75,17 @@ function Decode(fPort, bytes)
           myObj.TDSCoef = getUint16(bytes.slic(2, 4));
           myObj.Timestampe = + new Date();
         }
+    } else if (fPort == 4) { // for PH Sensor
+      myObj.report = "Data";
+      myObj.Temperature = getTemp(bytes.slice(0, 2));
+      myObj.PH = getPH(bytes.slice(2, 4));
+      myObj.Timestampe = + new Date();
+    } else if (fPort == 5) { // for Light/Temperture/Huminity
+      myObj.report = "Data";
+      myObj.Temperature = getTemp1(bytes.slice(0, 2));
+      myObj.Huminity = getHuminity(bytes.slice(2,4));
+      myObj.Lux = getUint32(bytes.slice(4, 8));
+      myObj.Timestampe = + new Date();
     }
 	return myObj;
 }
