@@ -60,19 +60,19 @@ function Decode(fPort, bytes)
           myObj.Timestampe = + new Date();
         } else if (t == 0xFE02) {
           myObj.report = "SoilType";
-          myObj.SoilType = getUint16(bytes.slic(2, 4));
+          myObj.SoilType = getUint16(bytes.slice(2, 4));
           myObj.Timestampe = + new Date();
         } else if (t == 0xFE03) {
           myObj.report = "ECTEMPCoef";
-          myObj.ECTEMPCoef = getUint16(bytes.slic(2, 4));
+          myObj.ECTEMPCoef = getUint16(bytes.slice(2, 4));
           myObj.Timestampe = + new Date();
         } else if (t == 0xFE04) {
           myObj.report = "SaltCoef";
-          myObj.SaltCoef = getUint16(bytes.slic(2, 4));
+          myObj.SaltCoef = getUint16(bytes.slice(2, 4));
           myObj.Timestampe = + new Date();
         } else if (t == 0xFE05) {
           myObj.report = "TDSCoef";
-          myObj.TDSCoef = getUint16(bytes.slic(2, 4));
+          myObj.TDSCoef = getUint16(bytes.slice(2, 4));
           myObj.Timestampe = + new Date();
         }
     } else if (fPort == 4) { // for PH Sensor
