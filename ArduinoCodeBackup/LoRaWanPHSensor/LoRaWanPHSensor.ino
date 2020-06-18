@@ -7,9 +7,9 @@
 #include "innerWdt.h"
 
 /* OTAA para*/
-uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0xff, 0xfe, 0x01, 0x00, 0x00 };
+uint8_t devEui[] = { 0x70, 0xBE, 0xD5, 0xff, 0xfe, 0x02, 0x00, 0x01 };
 uint8_t appEui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-uint8_t appKey[] = { 0xa0, 0x5b, 0x6d, 0x3d, 0x1c, 0x24, 0x46, 0x14, 0x9e, 0x6e, 0x89, 0x49, 0xc9, 0x4f, 0x23, 0x1a };
+uint8_t appKey[] = { 0x8f, 0xe9, 0x82, 0xb0, 0x95, 0xe4, 0x49, 0xc5, 0x92, 0x01, 0x17, 0x49, 0x88, 0x66, 0x0a, 0x79 };
 
 /* ABP para*/
 uint8_t nwkSKey[] = { 0x15, 0xb1, 0xd0, 0xef, 0xa4, 0x63, 0xdf, 0xbe, 0x3d, 0x11, 0x18, 0x1e, 0x1e, 0xc7, 0xda,0x85 };
@@ -136,25 +136,20 @@ static void prepareDataFrame(void)
 {
   uint8_t i;
   uint8_t resultMain;
-  uint16_t temperature = 0, ph = 0;
+  uint16_t ph = 0;
 
-  resultMain = node.readHoldingRegisters(0x0000, 2);
+  resultMain = node.readHoldingRegisters(0x0001, 1);
   if (resultMain == node.ku8MBSuccess) {
     Serial.println("---------------");
-    temperature = node.getResponseBuffer(0x00);
-    ph = node.getResponseBuffer(0x01);
-    Serial.print("temp:" + String(temperature));
-    Serial.println(", ph:" + String(ph));
+    ph = node.getResponseBuffer(0x0);
+    Serial.println("ph:" + String(ph));
   } else {
     /* fake data for test */
-    temperature = 2534; // 25.34 C
-    ph = 7582;         // ph: 7.582
+    ph = 758;         // ph: 7.58
     Serial.println("Send simulation data");
   }
   i = 0;
   appPort = 4;
-  appData[i++] = (uint8_t)(temperature >> 8);
-  appData[i++] = (uint8_t)(temperature & 0xFF);
   appData[i++] = (uint8_t)(ph >> 8);
   appData[i++] = (uint8_t)(ph & 0xFF);
   appDataSize = i;
