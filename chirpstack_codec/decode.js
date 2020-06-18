@@ -77,8 +77,7 @@ function Decode(fPort, bytes)
         }
     } else if (fPort == 4) { // for PH Sensor
       myObj.report = "Data";
-      myObj.Temperature = getTemp(bytes.slice(0, 2));
-      myObj.PH = getPH(bytes.slice(2, 4));
+      myObj.PH = getPH(bytes.slice(0, 2));
       myObj.Timestampe = + new Date();
     } else if (fPort == 5) { // for Light/Temperture/Huminity
       myObj.report = "Data";
