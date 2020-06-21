@@ -1,0 +1,4 @@
+Weather station SDK with OpenJAVA 1.8
+
+How to run the demo code
+java -Dfile.encoding=UTF-8 -classpath /home/kunyi/JavaSDKV2.2.2/Demo/bin:/home/kunyi/JavaSDKV2.2.2/Demo/lib/RSNetDevice-2.2.2.jar demo.Demo
