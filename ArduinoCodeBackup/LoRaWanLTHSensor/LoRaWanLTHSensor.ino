@@ -158,7 +158,9 @@ static void prepareDataFrame(void)
     /* fake data for test */
     temperature = 253; // 25.3C
     huminity = 853;         // huminity: 85.3%RH
-    lux = 5432;
+    lux = random(2);
+    lux <<= 16;
+    lux += random(65535);
     Serial.println("Send simulation data");
   }
   i = 0;
