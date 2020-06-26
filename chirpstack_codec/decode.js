@@ -85,6 +85,41 @@ function Decode(fPort, bytes)
       myObj.Huminity = getHuminity(bytes.slice(2,4));
       myObj.Lux = getUint32(bytes.slice(4, 8));
       myObj.Timestampe = + new Date();
+    } else if (fPort == 6) { // for Irrigation
+      myObj.report = "Data";
+      myObj.Irrigation = Object;
+
+      if ((bytes[1] & 0x01) == 0x01)
+      {
+        myObj.Irrigation.channel1 = true;
+      }
+      else {
+        myObj.Irrigation.channel1 = false;
+      }
+
+      if ((bytes[1] & 0x02) == 0x02)
+      {
+        myObj.Irrigation.channel2 = true;
+      }
+      else {
+        myObj.Irrigation.channel2 = false;
+      }
+
+      if ((bytes[1] & 0x04) == 0x04)
+      {
+        myObj.Irrigation.channel3 = true;
+      }
+      else {
+        myObj.Irrigation.channel3 = false;
+      }
+
+      if ((bytes[1] & 0x08) == 0x08)
+      {
+        myObj.Irrigation.channel4 = true;
+      }
+      else {
+        myObj.Irrigation.channel4 = false;
+      }
     }
 	return myObj;
 }
