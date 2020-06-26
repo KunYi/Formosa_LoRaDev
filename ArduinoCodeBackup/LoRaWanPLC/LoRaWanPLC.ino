@@ -7,7 +7,7 @@
 #include "innerWdt.h"
 
 /* OTAA para*/
-uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0xff, 0xfe, 0x04, 0x00, 0x00 };
+uint8_t devEui[] = { 0x70, 0xBE, 0xD5, 0xff, 0xfe, 0x04, 0x00, 0x01 };
 uint8_t appEui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 uint8_t appKey[] = { 0xe2, 0x0f, 0x63, 0x86, 0x00, 0x92, 0x4d, 0x2d, 0x8b, 0x17, 0x2f, 0x72, 0x39, 0xbc, 0x78, 0x5a };
 
@@ -86,7 +86,7 @@ typedef enum  {
   CMD_ECTEMPCOEF = 0xFE03,
   CMD_SALCOEF = 0xFE04,
   CMD_TDSCOEF = 0xFE05,
-  CMD_RELAY   = 0xFE06
+  CMD_RELAY   = 0xFE06,
   CMD_GETDATA = 0xFEDA,
   CMD_SYNCTIME = 0xFEEA
 } HYDRA_CMDS;
@@ -110,69 +110,6 @@ SoftwareSerial swser( GPIO5/* rx */, GPIO6/* tx */);
 //HardwareSerial hwser(UART_NUM_1);
 #endif
 
-static void prepareSoilTypeFrame(void) {
-  uint8_t i = 0;
-  uint8_t resultMain;
-  resultMain = node.readHoldingRegisters(REG_SOILTYPE, 1);
-  if (resultMain == node.ku8MBSuccess) {
-    uint16_t v = node.getResponseBuffer(0x00);
-    appPort = 3;
-    appData[i++] = (CMD_SOILTYPE >> 8) & 0xFF;
-    appData[i++] = CMD_SOILTYPE & 0xFF;
-    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
-    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
-    appDataSize = i;
-  }
-  gReportFlags.b.soilType = 0;
-}
-
-static void prepareECTempCoefFrame(void) {
-  uint8_t i = 0;
-  uint8_t resultMain;
-  resultMain = node.readHoldingRegisters(REG_ECTEMPCOEF, 1);
-  if (resultMain == node.ku8MBSuccess) {
-    uint16_t v = node.getResponseBuffer(0x00);
-    appPort = 3;
-    appData[i++] = (CMD_ECTEMPCOEF >> 8) & 0xFF;
-    appData[i++] = CMD_ECTEMPCOEF & 0xFF;
-    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
-    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
-    appDataSize = i;
-  }
-  gReportFlags.b.ECTempCoef = 0;
-}
-
-static void prepareSaltCoefFrame(void) {
-  uint8_t i = 0;
-  uint8_t resultMain;
-  resultMain = node.readHoldingRegisters(REG_SALCOEF, 1);
-  if (resultMain == node.ku8MBSuccess) {
-    uint16_t v = node.getResponseBuffer(0x00);
-    appPort = 3;
-    appData[i++] = (CMD_SALCOEF >> 8) & 0xFF;
-    appData[i++] = CMD_SALCOEF & 0xFF;
-    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
-    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
-    appDataSize = i;
-  }
-  gReportFlags.b.saltCoef = 0;
-}
-
-static void prepareTDSCoefFrame(void) {
-  uint8_t i = 0;
-  uint8_t resultMain;
-  resultMain = node.readHoldingRegisters(REG_TDSCOEF, 1);
-  if (resultMain == node.ku8MBSuccess) {
-    uint16_t v = node.getResponseBuffer(0x00);
-    appPort = 3;
-    appData[i++] = (CMD_TDSCOEF >> 8) & 0xFF;
-    appData[i++] = CMD_TDSCOEF & 0xFF;
-    appData[i++] = (uint8_t)(v >> 8) & 0xFF;
-    appData[i++] = (uint8_t)(v >> 0) & 0xFF;
-    appDataSize = i;
-  }
-  gReportFlags.b.TDSCoef = 0;
-}
 
 static void preparePeroidFrame(void)
 {
@@ -201,38 +138,18 @@ static void prepareDataFrame(void)
 {
   uint8_t i;
   uint8_t resultMain;
-  uint16_t temperature = 0, vwc = 0, EC = 0, sal = 0;
+  uint16_t ch = 0;
 
-  resultMain = node.readHoldingRegisters(0x0000, 4);
+  resultMain = node.readHoldingRegisters(0x0000, 1);
   if (resultMain == node.ku8MBSuccess) {
-    Serial.println("---------------");
-    temperature = node.getResponseBuffer(0x00);
-    vwc = node.getResponseBuffer(0x01);
-    EC = node.getResponseBuffer(0x02);
-    sal = node.getResponseBuffer(0x03);
-    Serial.print("temp:" + String(temperature));
-    Serial.print(", vwc:" + String(vwc));
-    Serial.print(", EC:" + String(EC));
-    Serial.println(", Sal:" + String(sal));
+
   } else {
-    /* fake data for test */
-    temperature = 2534; // 25.34 C
-    //temperature = 0xFF05; // -2.51 C
-    vwc = 7803;         // 78.03%
-    EC = 18340;
-    sal = 14534;
     Serial.println("Send simulation data");
   }
   i = 0;
-  appPort = 2;
-  appData[i++] = (uint8_t)(temperature >> 8);
-  appData[i++] = (uint8_t)(temperature & 0xFF);
-  appData[i++] = (uint8_t)(vwc >> 8);
-  appData[i++] = (uint8_t)(vwc & 0xFF);
-  appData[i++] = (uint8_t)(EC >> 8);
-  appData[i++] = (uint8_t)(EC & 0xFF);
-  appData[i++] = (uint8_t)(sal >> 8);
-  appData[i++] = (uint8_t)(sal & 0xFF);
+  appPort = 6;
+  appData[i++] = (uint8_t)(ch >> 8);
+  appData[i++] = (uint8_t)(ch & 0xFF);
   appDataSize = i;
 }
 
@@ -248,22 +165,6 @@ static void prepareTxFrame(void)
 	*/
 
   if (gReportFlags.V != 0) {
-    if (gReportFlags.b.soilType) {
-      prepareSoilTypeFrame();
-      return;
-    }
-    if (gReportFlags.b.ECTempCoef) {
-      prepareECTempCoefFrame();
-      return;
-    }
-    if (gReportFlags.b.saltCoef) {
-      prepareSaltCoefFrame();
-      return;
-    }
-    if (gReportFlags.b.TDSCoef) {
-      prepareTDSCoefFrame();
-      return;
-    }
     if (gReportFlags.b.period) {
       preparePeroidFrame();
       return;
@@ -287,63 +188,6 @@ static void setPeroid(uint8_t size, uint8_t *d) {
   gReportFlags.b.period = 1;
 }
 
-static void reportSoilType() {
-  Serial.println("set report SoilType");
-  gReportFlags.b.soilType = 1;
-}
-
-static void setSoilType(uint8_t size, uint8_t *d) {
-  if (size >= 2) {
-    uint16_t v = d[0] << 0 | d[1];
-    if (v <= 3) {
-      node.writeSingleRegister(REG_SOILTYPE, v);
-      gReportFlags.b.soilType = 1;
-    }
-  }
-}
-
-static void reportECTempCoef() {
-  gReportFlags.b.ECTempCoef = 1;
-}
-
-static void setECTempCoef(uint8_t size, uint8_t *d) {
-  if (size >= 2) {
-    uint16_t v = d[0] << 0 | d[1];
-    if (v <= 100) {
-      node.writeSingleRegister(REG_ECTEMPCOEF, v);
-      gReportFlags.b.ECTempCoef = 1;
-    }
-  }
-}
-
-static void reportSaltCoef() {
-  gReportFlags.b.saltCoef = 1;
-}
-
-static void setSaltCoef(uint8_t size, uint8_t *d) {
-  if (size >= 2) {
-    uint16_t v = d[0] << 0 | d[1];
-    if (v <= 100) {
-      node.writeSingleRegister(REG_SALCOEF, v);
-      gReportFlags.b.saltCoef = 1;
-    }
-  }
-}
-
-static void reportTDSCoef() {
-  gReportFlags.b.TDSCoef = 1;
-}
-
-static void setTDSCoef(uint8_t size, uint8_t *d) {
-  if (size >= 2) {
-    uint16_t v = d[0] << 0 | d[1];
-    if (v <= 100) {
-      node.writeSingleRegister(REG_TDSCOEF, v);
-      gReportFlags.b.TDSCoef = 1;
-    }
-  }
-}
-
 static void setNetTime(uint8_t size, uint8_t *d) {
     if (size >= 8) {
       uint64_t time;
@@ -351,6 +195,14 @@ static void setNetTime(uint8_t size, uint8_t *d) {
             d[4] << 24 | d[5] << 16 | d[6] << 8 | d[7];
       setTime((time_t)time);
     }
+}
+
+static void setRelay(uint8_t size, uint8_t *d) {
+  // node.writeSingleRegister() // function 6
+  // node.writeSingleCoil() // function 5
+  // node.writeSingleCoil() // function 5
+  // node.writeMultipleCoil();
+  Serial.println("setRelay");
 }
 
 static void resetDevice(void) {
@@ -374,9 +226,14 @@ static void procRxData(const uint8_t port, uint8_t size, uint8_t *data)
       setPeroid(size - 3, &data[3]);
     }
     break;
-
+  case CMD_RELAY:
+    Serial.println("CMD_RELAY");
+    if (data[2] == TYPE_SET) {
+      setRelay(size - 3, &data[3]);
+    }
+    break;
   case CMD_SYNCTIME:
-    setNetTime(size - 2, &data[3]);
+    setNetTime(size - 3, &data[3]);
     break;
   case CMD_RESET:
     if (data[2] == 0x55 && data[3] == 0xAA)
