@@ -129,6 +129,35 @@ function SetHydraSensorTDSCoef(obj)
     return bytes;
 }
 
+function GetIrrigation() {
+    return [ 0xFE, 0x06, 0x00 ];
+}
+
+function SetIrrigation(obj) {
+    if (typeof obj.Irrigation === "object") {
+        var bytes = [];
+        ctrl = obj.Irrigation;
+        bytes[0] = 0xFE;
+        bytes[1] = 0x06;
+        bytes[2] = 0x01;
+        bytes[3] = 0x00;
+        bytes[4] = 0x00;
+        if (ctrl.channel1 == true) {
+          bytes[4] |= 0x01;
+        }
+        if (ctrl.channel2 == true) {
+          bytes[4] |= 0x02;
+        }
+        if (ctrl.channel3 == true) {
+          bytes[4] |= 0x04;
+        }
+        if (ctrl.channel4 == true) {
+          bytes[4] |= 0x08;
+        }
+        return bytes;
+    }
+}
+
 // Encode encodes the given object into an array of bytes.
 //  - fPort contains the LoRaWAN fPort number
 //  - obj is an object, e.g. {"temperature": 22.5}
@@ -189,7 +218,15 @@ function Encode(fPort, obj) {
                 if (obj.Control == "Set") {
                     return SetHydraSensorTDSCoef(obj);
                 }
-            }      
+            }
+            else if (obj.Obj == "Irrigation") {
+                if (obj.Control == "Get") {
+                    return GetIrrigation();
+                }
+                else if (obj.Control == "Set") {
+                    return SetIrrigation(obj);
+                }
+            }
         } // end of if (obj.Obj)
     } // end of if (fPort == 10)
     return bytes;
