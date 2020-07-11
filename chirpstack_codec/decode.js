@@ -79,11 +79,14 @@ function Decode(fPort, bytes)
       myObj.report = "Data";
       myObj.PH = getPH(bytes.slice(0, 2));
       myObj.Timestampe = + new Date();
-    } else if (fPort == 5) { // for Light/Temperture/Huminity
+    } else if (fPort == 5) { // for Light/Temperture/Huminity/CO2
       myObj.report = "Data";
       myObj.Temperature = getTemp1(bytes.slice(0, 2));
       myObj.Huminity = getHuminity(bytes.slice(2,4));
       myObj.Lux = getUint32(bytes.slice(4, 8));
+      if (bytes.length == 10) {
+        myObj.CO2 = getUint16(bytes.slice(8,10));
+      }
       myObj.Timestampe = + new Date();
     } else if (fPort == 6) { // for Irrigation
       myObj.report = "Data";
