@@ -22,7 +22,7 @@ function getVWC(tmp) {
 }
 
 function getPH(tmp) {
-  return (tmp[0] << 8 | tmp[1]).toFixed(2) * 0.001;
+  return (tmp[0] << 8 | tmp[1]).toFixed(2) * 0.01;
 }
 
 function getHuminity(tmp) {
