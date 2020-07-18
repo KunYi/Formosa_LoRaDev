@@ -43,6 +43,16 @@ bool isTxConfirmed = LORAWAN_UPLINKMODE;
 /* Application port */
 uint8_t appPort = 2;
 
+/* PLC relay */
+#define PLC_Y0 (300)
+#define PLC_Y1 (301)
+#define PLC_Y2 (302)
+#define PLC_Y4 (303)
+#define PLC_Mxxx (4000)
+const uint16_t adrM100 = (PLC_Mxxx + 100);
+const uint16_t adrRelayStart=(4000 + 100);
+const uint16_t adrY0 = PLC_Y0;
+
 struct SENSOR_REPORT_T {
   uint16_t soilType: 1;
   uint16_t ECTempCoef: 1;
@@ -51,6 +61,7 @@ struct SENSOR_REPORT_T {
   uint16_t period: 1;
   uint16_t dateTime: 1;
   uint16_t twice: 1;
+  uint16_t relay: 1;
 };
 
 typedef union {
@@ -136,13 +147,22 @@ static void preparePeroidFrame(void)
 
 static void prepareDataFrame(void)
 {
+  const uint8_t mask_ch[4] = {
+                    (1 << 0),
+                    (1 << 1),
+                    (1 << 2),
+                    (1 << 3)};
   uint8_t i;
   uint8_t resultMain;
   uint16_t ch = 0;
 
-  resultMain = node.readHoldingRegisters(0x0000, 1);
+  resultMain = node.readCoils(PLC_Y0, 4);
   if (resultMain == node.ku8MBSuccess) {
-
+    for (i = 0; i < 4; i++ ) {
+      if (node.getResponseBuffer(i))
+         ch |= mask_ch[i];
+    }
+    Serial.println("PLC output:" + String(ch));
   } else {
     Serial.println("Send simulation data");
   }
@@ -198,11 +218,25 @@ static void setNetTime(uint8_t size, uint8_t *d) {
 }
 
 static void setRelay(uint8_t size, uint8_t *d) {
-  // node.writeSingleRegister() // function 6
-  // node.writeSingleCoil() // function 5
-  // node.writeSingleCoil() // function 5
-  // node.writeMultipleCoil();
-  Serial.println("setRelay");
+  uint16_t relay = 0;
+  uint8_t result;
+  int i;
+
+  relay = *d;
+  relay <<= 8;
+  relay += *(d+1);
+
+  /* setting M100 ~ M103 */
+  node.beginTransmission(adrM100);
+  for (i = 0; i < 4; i++) {
+      node.sendBit(relay & 0x1);
+      relay >>= 1;
+  }
+
+  if (node.writeMultipleCoils() != node.ku8MBSuccess)
+    Serial.println("setRelay Failed!");
+  else
+    Serial.println("setRelay");
 }
 
 static void resetDevice(void) {
