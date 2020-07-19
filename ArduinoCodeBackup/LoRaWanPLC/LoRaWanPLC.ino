@@ -147,25 +147,19 @@ static void preparePeroidFrame(void)
 
 static void prepareDataFrame(void)
 {
-  const uint8_t mask_ch[4] = {
-                    (1 << 0),
-                    (1 << 1),
-                    (1 << 2),
-                    (1 << 3)};
   uint8_t i;
   uint8_t resultMain;
   uint16_t ch = 0;
 
   resultMain = node.readCoils(PLC_Y0, 4);
   if (resultMain == node.ku8MBSuccess) {
-    for (i = 0; i < 4; i++ ) {
-      if (node.getResponseBuffer(i))
-         ch |= mask_ch[i];
-    }
-    Serial.println("PLC output:" + String(ch));
+    ch = node.getResponseBuffer(0);
+    node.clearResponseBuffer();
+    Serial.printf("PLC output:0x%X\n\n", ch);
   } else {
     Serial.println("Send simulation data");
   }
+
   i = 0;
   appPort = 6;
   appData[i++] = (uint8_t)(ch >> 8);
@@ -220,23 +214,21 @@ static void setNetTime(uint8_t size, uint8_t *d) {
 static void setRelay(uint8_t size, uint8_t *d) {
   uint16_t relay = 0;
   uint8_t result;
-  int i;
 
   relay = *d;
   relay <<= 8;
   relay += *(d+1);
 
   /* setting M100 ~ M103 */
-  node.beginTransmission(adrM100);
-  for (i = 0; i < 4; i++) {
-      node.sendBit(relay & 0x1);
-      relay >>= 1;
-  }
-
-  if (node.writeMultipleCoils() != node.ku8MBSuccess)
-    Serial.println("setRelay Failed!");
-  else
-    Serial.println("setRelay");
+  feedInnerWdt();
+  node.writeSingleCoil(4100, (relay & 0x01) ? true : false);
+  feedInnerWdt();
+  node.writeSingleCoil(4101, (relay & 0x02) ? true : false);
+  feedInnerWdt();
+  node.writeSingleCoil(4102, (relay & 0x04) ? true : false);
+  feedInnerWdt();
+  node.writeSingleCoil(4103, (relay & 0x08) ? true : false);
+  feedInnerWdt();
 }
 
 static void resetDevice(void) {
