@@ -17,17 +17,31 @@ Temperature/Huminity/Lux sensor
 * 0x0009 : Lux (MSB)
 * 0x000A : Lux (MLS)
 
+
+### CO2 sensor (ADD)
+ #### MODBUS/RS485 RTU PROTOCOL
+---
+ * Slave ID: 0x01
+ * Baud: 9600bps
+ * Parity: None
+ * Data: 8 Bits
+ * Stop: 1
+
+#### HoldingRegisters/Function 3(Read)
+
+* 0x0002 : CO2  (ppm)
+
 ####
 
 ### Data JSON Object, for example
 ---
-**MQTT Topic: 'application/2/device/007032fffe010000/rx'**
+**MQTT Topic: 'application/2/device/007032fffe030001/rx'**
 ```
 ####
 
 ### Data JSON Object, for example
 ---
-**MQTT Topic: 'application/2/device/007032fffe010000/rx'**
+**MQTT Topic: 'application/2/device/007032fffe030000/rx'**
 ```
 ####
 
@@ -49,6 +63,7 @@ Temperature/Huminity/Lux sensor
     "fPort":5,
     "data":"CeYhVAAAFTg=",
     "object":{
+        "CO2": 2809,
         "Huminity":85.32,
         "Lux":5432,
         "Temperature":25.3,
