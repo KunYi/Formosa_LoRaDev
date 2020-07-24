@@ -64,3 +64,19 @@ RM3-PH03,
 RM3-PH04,
 
 10+3=13 board
+=============================
+RM1-LT01
+RM1-SS06, *
+RM1-IC01
+
+RM2-SS08, *
+RM2-PH04
+RM2-IC01
+
+RM3-SS02 *
+RM3-SS07 * (maybe reset issues)
+RM3-IC01
+RM3-PH01,
+RM3-PH02,
+RM3-PH03,
+RM3-PH04,
