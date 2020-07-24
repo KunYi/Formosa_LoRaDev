@@ -1,11 +1,9 @@
-
-
-ssh
-
-ssh pi@jp-tyo-dvm.sakurafrp.com -p 10262
-
 http
 http://chirpstack.uwingstech.com/
+
+account: user
+password: user123
+
 
 ---
 pi@rak-gateway:~ $ cat /lib/systemd/system/sakurafrp.service 
@@ -59,4 +57,16 @@ local_port = 8080
 custom_domains = chirpstack.uwingstech.com
 use_encryption = false
 use_compression = true
+
+
+chripstack
+user:admin
+password:Formosa123
+
+ssh pi@jp-tyo-dvm.sakurafrp.com -p 10262
+gateway, SSh
+user:pi
+password:Formosa123
+
+
 
