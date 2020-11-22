@@ -7,7 +7,7 @@
 #include "innerWdt.h"
 
 /* OTAA para*/
-uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0xff, 0xfe, 0x01, 0x00, 0x00 };
+uint8_t devEui[] = { 0x70, 0xB3, 0xD5, 0xff, 0xfe, 0x01, 0x00, 0x21 };
 uint8_t appEui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 uint8_t appKey[] = { 0xa0, 0x5b, 0x6d, 0x3d, 0x1c, 0x24, 0x46, 0x14, 0x9e, 0x6e, 0x89, 0x49, 0xc9, 0x4f, 0x23, 0x1a };
 
@@ -26,7 +26,7 @@ LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 DeviceClass_t  loraWanClass = LORAWAN_CLASS;
 
 /*the application data transmission duty cycle.  value in [ms].*/
-uint32_t appTxDutyCycle = 30000;
+uint32_t appTxDutyCycle = 45000;
 
 /*OTAA or ABP*/
 bool overTheAirActivation = LORAWAN_NETMODE;
@@ -144,6 +144,7 @@ static void prepareECTempCoefFrame(void) {
 static void prepareSaltCoefFrame(void) {
   uint8_t i = 0;
   uint8_t resultMain;
+  feedInnerWdt();
   resultMain = node.readHoldingRegisters(REG_SALCOEF, 1);
   if (resultMain == node.ku8MBSuccess) {
     uint16_t v = node.getResponseBuffer(0x00);
@@ -154,6 +155,7 @@ static void prepareSaltCoefFrame(void) {
     appData[i++] = (uint8_t)(v >> 0) & 0xFF;
     appDataSize = i;
   }
+  feedInnerWdt();
   gReportFlags.b.saltCoef = 0;
 }
 

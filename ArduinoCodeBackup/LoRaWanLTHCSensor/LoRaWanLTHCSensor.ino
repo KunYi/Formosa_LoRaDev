@@ -8,7 +8,7 @@
 
 /* OTAA para*/
 
-uint8_t devEui[] = { 0x70, 0xBE, 0xD5, 0xff, 0xfe, 0x03, 0x00, 0x01 };
+uint8_t devEui[] = { 0x70, 0xBE, 0xD5, 0xff, 0xfe, 0x03, 0x00, 0x03 };
 uint8_t appEui[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 uint8_t appKey[] = { 0x48, 0x74, 0x25, 0xda, 0x07, 0x73, 0x45, 0x5c, 0xa4, 0x77, 0xa1, 0x5a, 0x93, 0x93, 0xb4, 0xc6 };
 /* ABP para*/
@@ -141,6 +141,7 @@ static void prepareDataFrame(void)
   uint16_t co2 = 0xFFFF;
   uint32_t lux = 0;
 
+  feedInnerWdt();
   resultMain = node.readHoldingRegisters(0x0005, 2);
   if (resultMain == node.ku8MBSuccess) {
     Serial.println("---------------");
@@ -148,7 +149,10 @@ static void prepareDataFrame(void)
     huminity = node.getResponseBuffer(0x01);
     Serial.print("temp:" + String(temperature));
     Serial.print(", huminity:" + String(huminity));
+    feedInnerWdt();
     delay(20);
+    feedInnerWdt();
+
     resultMain = node.readHoldingRegisters(0x0009, 2);
     if (resultMain == node.ku8MBSuccess) {
       lux = node.getResponseBuffer(0x00);
@@ -166,7 +170,9 @@ static void prepareDataFrame(void)
     lux += random(65535);
     Serial.println("Send simulation data");
   }
+  feedInnerWdt();
   delay(20);
+  feedInnerWdt();
   resultMain = nodeCO2.readHoldingRegisters(2, 1);
   if (resultMain == nodeCO2.ku8MBSuccess) {
     co2 = nodeCO2.getResponseBuffer(0x00);
