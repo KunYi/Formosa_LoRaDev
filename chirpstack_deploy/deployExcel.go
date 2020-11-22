@@ -70,7 +70,7 @@ func init() {
 	flag.StringVar(&username, "username", "admin", "LoRa App Server username")
 	flag.StringVar(&password, "password", "admin", "LoRa App Server password")
 	flag.StringVar(&file, "file", "", "Path to Excel file")
-	flag.StringVar(&apiHost, "api", "localhost:8080", "hostname:port to LoRa App Server API")
+	flag.StringVar(&apiHost, "api", "raspberrypi3.local:8080", "hostname:port to LoRa App Server API")
 	flag.BoolVar(&apiInsecure, "api-insecure", false, "LoRa App Server API does not use TLS")
 	flag.Parse()
 }
@@ -175,8 +175,8 @@ func importDevices(conn *grpc.ClientConn, devices []DeviceImportRecord) error {
 
 		dk := api.DeviceKeys{
 			DevEui:    dev.DevEUI,
-			NwkKey:    dev.NetworkKey,
-			AppKey:    dev.ApplicationKey,
+			NwkKey:    dev.ApplicationKey,
+			AppKey:    dev.NetworkKey,
 			GenAppKey: dev.GenAppKey,
 		}
 
@@ -186,6 +186,9 @@ func importDevices(conn *grpc.ClientConn, devices []DeviceImportRecord) error {
 		if err != nil {
 			if grpc.Code(err) == codes.AlreadyExists {
 				log.Printf("device %s already exists (row %d)", d.DevEui, i+2)
+				deviceClient.Delete(context.Background(), &api.DeleteDeviceRequest{
+					DevEui: d.GetDevEui(),
+				})
 				continue
 			}
 			log.Fatalf("import error (device %s row %d): %s", d.DevEui, i+2, err)
@@ -204,6 +207,26 @@ func importDevices(conn *grpc.ClientConn, devices []DeviceImportRecord) error {
 	}
 
 	return nil
+}
+
+func createDeviceProfile(conn *grpc.ClientConn) {
+	deviceProfileClient := api.NewDeviceProfileServiceClient(conn)
+	deviceProfile := api.DeviceProfile{
+		Id:           "FC04C601-A2F7-41A1-B23E-CD4AABA4B05B",
+		Name:         "otta",
+		SupportsJoin: true,
+	}
+
+	_, err := deviceProfileClient.Create(context.Background(), &api.CreateDeviceProfileRequest{
+		DeviceProfile: &deviceProfile,
+	})
+
+	if err != nil {
+		if grpc.Code(err) == codes.AlreadyExists {
+			log.Printf("deviceprofile %s already exists", deviceProfile.Id)
+		}
+		log.Fatalf("import error (deviceprofile %s ): %s", deviceProfile.Id, err)
+	}
 }
 
 func main() {
